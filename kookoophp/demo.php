@@ -123,27 +123,33 @@ fwrite($fp,"----------- session params maintained -------------  \n");
 	 	fwrite($fp,"session params $k =  $v  \n");
 	}
  
+/*First Time Recieving Call 
+ * Here we will present the option to accept Queue Id
+ * In Response we will fetch the queue status and play back  queue status
+ 
+ */
 if($_REQUEST['event']== "NewCall" ) 
 {
 	
-fwrite($fp,"-----------NewCall from kookoo  -------------  \n");
-	// Every new call first time you will get below params from kookoo
-	//                                        event = NewCall
-	//                                         cid= caller Number
-	//                                         called_number = sid
-	//                                         sid = session variable
-	//    
-	//You maintain your own session params store require data
-	$_SESSION['caller_number']=$_REQUEST['cid'];
-	$_SESSION['kookoo_number']=$_REQUEST['called_number']; 
-	//called_number is register phone number on kookoo
-	//
-	$_SESSION['session_id']   = $_REQUEST['sid'];
-	//sid is unique callid for each call
-    // you maintain one session variable to check position of your call
-    //here i had maintain next_goto as session variable
-  $_SESSION['next_goto']='Menu1';
+	fwrite($fp,"-----------NewCall from kookoo  -------------  \n");
+		// Every new call first time you will get below params from kookoo
+		//                                        event = NewCall
+		//                                         cid= caller Number
+		//                                         called_number = sid
+		//                                         sid = session variable
+		//    
+		//You maintain your own session params store require data
+		$_SESSION['caller_number']=$_REQUEST['cid'];
+		$_SESSION['kookoo_number']=$_REQUEST['called_number']; 
+		//called_number is register phone number on kookoo
+		//
+		$_SESSION['session_id']   = $_REQUEST['sid'];
+		//sid is unique callid for each call
+		// you maintain one session variable to check position of your call
+		//here i had maintain next_goto as session variable
+	  $_SESSION['next_goto']='Menu1';
 } 
+
 if ($_REQUEST['event']=="Disconnect" || $_REQUEST['event']=="Hangup" ){
 	//when users hangs up at any time in call  event=Disconnect 
     // when applicatoin sends hangup event event=Disconnect  
@@ -151,105 +157,35 @@ if ($_REQUEST['event']=="Disconnect" || $_REQUEST['event']=="Hangup" ){
     //if users hang up the call in dial event you will get data ans status params also
     //$_SESSION['dial_record_url']=$_REQUEST['data'];
     //$_SESSION['dial_status']=$_REQUEST['status'];
-exit;
+	exit;
 } 
 
 if($_SESSION['next_goto']=='Menu1'){
  	$collectInput = New CollectDtmf();
-	$collectInput->addPlayText('welcome to koo koo',4);
-	$collectInput->addPlayText('press 1 for record, press 2 dial, press 3 for conference test, press 4, for other',4);
-	$collectInput->setMaxDigits('1'); //max inputs to be allowed
-	$collectInput->setTimeOut('4000');  //maxtimeout if caller not give any inputs
+	$collectInput->addPlayText('welcome to Easy Wait',4);
+	$collectInput->addPlayText('Enter your Queue Id, Followed By # Sign',4);
+	$collectInput->setMaxDigits('4'); //max inputs to be allowed
+	$collectInput->setTimeOut('9000');  //maxtimeout if caller not give any inputs
+	$collectInput->setTermChar('#');  
 	$r->addCollectDtmf($collectInput);
     $_SESSION['next_goto']='Menu1_CheckInput';
 }
 else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_CheckInput' )
 {
-//input will come data param
-//print parameter data value
- if($_REQUEST['data'] == ''){ //if value null, caller has not given any dtmf
-	//no input handled
-	 $r->addPlayText('you have not entered any input');
-	 $_SESSION['next_goto']='Menu1';
-}else if($_REQUEST['data'] == '1'){
-	$_SESSION['next_goto'] = 'Record_Status';
-	$r->addPlayText('Please record your message after beep ');
-	//give unique file name for each recording
-	$r->addRecord('filename2','wav','120');
-}else if($_REQUEST['data'] == '2'){
-    $_SESSION['next_goto'] = 'DialMenu';
-}else if($_REQUEST['data'] == '3'){
-	$r->addPlayText('your conference number is 1 2 3 4 ');
-	$r->addConference(1234); 
-	$_SESSION['next_goto'] = 'Dial1_Status';
-}else if($_REQUEST['data'] == '4'){
-	$r->addGoto('http://127.0.0.1/kookoophp/demo_gotopage.php'); //update the url to redirect from demo.php to demo_gotopage.php 
-	//url should be full url : 'http://host../nextapp.app' it will jump to next url
-	$_SESSION['next_goto'] = 'Menu1';
+	//input will come data param
+	//print parameter data value
+	 if($_REQUEST['data'] == ''){ //if value null, caller has not given any dtmf
+		//no input handled
+		 $r->addPlayText('You have not provided Queue Id, Please Try Again');
+		 $_SESSION['next_goto']='Menu1';
+	}
+	else{
+		$_SESSION['qid'] = $_REQUEST['data'];
+		$r->addPlayText('Thank you for calling, You Have Selected Queue Id, ' . $_SESSION['qid']);
+		$r->addHangup();	// do something more or send hang up to kookoo
+	}
 }
-else{
-	$r->addPlayText('Thats an invalid input');
-}
-}
-else if($_SESSION['next_goto']=='DialMenu'){
-	
-	$collectInput = New CollectDtmf();
-	$collectInput->addPlayText('please enter the number that you want to dial followed by hash, if it is s t d number, enter 0 as pre fix ',3);
-	//$collectInput->addPlayText('press 1 for record, press 2 dial press 3 for cc transer',4);
-	$collectInput->setMaxDigits('15'); //max inputs to be allowed
-	$collectInput->setTimeOut('4000');  //maxtimeout if caller not give any inputs
-	$collectInput->setTermChar('#');  
-	$r->addCollectDtmf($collectInput);
-    $_SESSION['next_goto']='Menu1_CheckInput1';
-	
-}
-else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_CheckInput1' )
-{
-//input will come in data param
-//print print parameter data value
- if($_REQUEST['data'] == '')
-     { //if value null, caller has not given any dtmf
-	//no input handled
-	 $r->addPlayText('you have not entered any input');
-	 $_SESSION['next_goto']='Menu1';
-     }
-     else 
-	  {
-	
-     $_SESSION['dial'] = $_REQUEST['data'];
-     $r->addPlayText('please wait while we transfer your call to our customer care');
-	 $r->addDial($_SESSION['dial'],'true',1000,30,'ring');
-	 $_SESSION['next_goto'] = 'Dial1_Status';
-     }
-}
-else if($_REQUEST['event'] == 'Record' && $_SESSION['next_goto'] == 'Record_Status' )
-{
-//recorded file will be come as  url in data param
-//print parameter data value
-	 $r->addPlayText('your recorded audio is ');
-	 $_SESSION['record_url']=$_REQUEST['data'];
-	 $r->addPlayAudio($_SESSION['record_url']);
-	 $r->addPlayText('Thanks you for calling, have a nice day');
-	 $r->addHangup();	
-}else if($_REQUEST['event'] == 'Dial' && $_SESSION['next_goto'] == 'Dial1_Status' )
-{
-//dial url will come data param  //if dial record false then data value will be -1 or null
-//dial status will come in status (answered/not_answered) param
-//print parameter data and status params value
- 	 $_SESSION['dial_record_url']=$_REQUEST['data'];
-	 $_SESSION['dial_status']=$_REQUEST['status'];
-	 $_SESSION['dial_callduration']=$_REQUEST['callduration'];
-	 if($_REQUEST['status'] == 'not_answered'){
-	//if you would like dial another number, if first call not answered,
-	//	
-	 $r->addDial("99999999",'true',1000,30,'default');
-	 }else{
-	 	 $r->addPlayText('Thank you for calling, ');
-	 	 $r->addHangup();	// do something more or send hang up to kookoo
-	// call is answered
-	 }
-	 
-}else {
+else {
 	//print you session param 'next_goto' and other details
       $r->addPlayText('Sorry, session and events not maintained properly, Thank you for calling, have nice day');
       $r->addHangup();	// do something more or to send hang up to kookoo	
