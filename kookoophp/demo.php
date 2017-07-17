@@ -181,7 +181,25 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 	}
 	else{
 		$_SESSION['qid'] = $_REQUEST['data'];
-		$r->addPlayText('Thank you for calling, You Have Selected Queue Id, ' . $_SESSION['qid']);
+		
+		$ch = curl_init();
+		$url = "http://52.24.120.4:8001/api/queue/" . $_SESSION['qid']
+		// set URL and other appropriate options
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+
+		// grab URL and pass it to the browser
+		$result = curl_exec($ch);
+		// close cURL resource, and free up system resources
+		curl_close($ch);
+		$json = json_decode($result, true);
+		//$json['error'];
+		//$json['position'];
+		//$json['name'];
+
+		
+		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] . ' , Current Position, ' . $json['position'] . ' , Queue Name, ' . $json['name']);
+		$r->addPlayText('Thank You for using Easy Wait, We hope to serve you again');
 		$r->addHangup();	// do something more or send hang up to kookoo
 	}
 }
