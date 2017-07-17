@@ -189,6 +189,7 @@ $result = curl_exec($ch);
 curl_close($ch);
 		
 $json = json_decode($result, true);
+		print_r($json);
 		
 		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] , 4);
 		$r->addHangup();	// do something more or send hang up to kookoo
