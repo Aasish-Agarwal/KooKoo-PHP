@@ -181,6 +181,12 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 	}
 	else{
 		$_SESSION['qid'] = $_REQUEST['data'];
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8001/api/queue/2");
+curl_setopt($ch, CURLOPT_HEADER, 0);
+$result = curl_exec($ch);
+curl_close($ch);
 		
 		
 		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] , 4);
