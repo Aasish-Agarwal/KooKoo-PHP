@@ -196,6 +196,18 @@ $json = json_decode($result, true);
 	}
 }
 else {
+
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8001/api/queue/2");
+curl_setopt($ch, CURLOPT_HEADER, 0);
+$result = curl_exec($ch);
+curl_close($ch);
+		
+$json = json_decode($result, true);
+		print_r($json);
+
+
 	//print you session param 'next_goto' and other details
       $r->addPlayText('Sorry, session and events not maintained properly, Thank you for calling, have nice day');
       $r->addHangup();	// do something more or to send hang up to kookoo	
