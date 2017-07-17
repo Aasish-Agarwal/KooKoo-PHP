@@ -193,12 +193,9 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		// close cURL resource, and free up system resources
 		curl_close($ch);
 		$json = json_decode($result, true);
-		//$json['error'];
-		//$json['position'];
-		//$json['name'];
-
 		
-		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] . ' , Current Position, ' . $json['position'] . ' , Queue Name, ' . $json['name']);
+		
+		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] , 4);
 		$r->addPlayText('Thank You for using Easy Wait, We hope to serve you again');
 		$r->addHangup();	// do something more or send hang up to kookoo
 	}
