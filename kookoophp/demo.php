@@ -183,13 +183,13 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		$_SESSION['qid'] = $_REQUEST['data'];
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8001/api/queue/2");
+curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8000/api/queue/2");
 curl_setopt($ch, CURLOPT_HEADER, 0);
 $result = curl_exec($ch);
 curl_close($ch);
 		
 $json = json_decode($result, true);
-		print_r($json);
+print_r($json);
 		
 		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] , 4);
 		$r->addHangup();	// do something more or send hang up to kookoo
@@ -199,13 +199,13 @@ else {
 
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8001/api/queue/2");
+curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8000/api/queue/2");
 curl_setopt($ch, CURLOPT_HEADER, 0);
 $result = curl_exec($ch);
 curl_close($ch);
 		
 $json = json_decode($result, true);
-		print_r($json);
+print_r($json);
 
 
 	//print you session param 'next_goto' and other details
