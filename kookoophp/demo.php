@@ -163,7 +163,7 @@ if ($_REQUEST['event']=="Disconnect" || $_REQUEST['event']=="Hangup" ){
 if($_SESSION['next_goto']=='Menu1'){
  	$collectInput = New CollectDtmf();
 	$collectInput->addPlayText('welcome to Easy Wait',4);
-	$collectInput->addPlayText('Enter your Queue Id, Followed By # Sign',4);
+	$collectInput->addPlayText('Enter your Queue Number, Followed By, # ,Sign',4);
 	$collectInput->setMaxDigits('4'); //max inputs to be allowed
 	$collectInput->setTimeOut('9000');  //maxtimeout if caller not give any inputs
 	$collectInput->setTermChar('#');  
@@ -197,7 +197,7 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		} 
 		else 
 		{
-			$r->addPlayText('Sorry, we could not find a queue with ID, ' . $_SESSION['qid'] . ' ,Please try again with correct ID' );
+			$r->addPlayText('Sorry, we could not find a queue with Number, ' . $_SESSION['qid'] . ' ,Please try again with correct Queue Number' );
 			$_SESSION['next_goto']='Menu1';
 		}
 	}
