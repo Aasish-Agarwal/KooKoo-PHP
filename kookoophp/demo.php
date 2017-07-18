@@ -192,8 +192,8 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		$json = json_decode($result, true);
 
 		if ( $json['error'] == false ) {
-			$r->addPlayText('Current Position for Queue, ' . $_SESSION['qid'] . ' ,Having Name, ' .  $json['name'] . ', is ' . $json['position'] );
-			$r->addHangup();	// do something more or send hang up to kookoo
+			$r->addPlayText('Current Position for Queue, ' . $_SESSION['qid'] . ' ,Having Name, ' .  $json['name'] . ', is ' . $json['position'], 4 );
+			$_SESSION['next_goto']='Menu1';
 		} 
 		else 
 		{
