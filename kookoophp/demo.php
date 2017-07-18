@@ -182,35 +182,30 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 	else{
 		$_SESSION['qid'] = $_REQUEST['data'];
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8000/api/queue/2");
-curl_setopt($ch, CURLOPT_HEADER, 0);
-$result = curl_exec($ch);
-curl_close($ch);
-		
-$json = json_decode($result, true);
-print_r($json);
-		
-		$r->addPlayText('Queue Id, ' . $_SESSION['qid'] , 4);
-		$r->addHangup();	// do something more or send hang up to kookoo
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, 'http://52.24.120.4:8000/api/queue/' . $_SESSION['qid'] );
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$result = curl_exec($ch);
+		curl_close($ch);
+				
+		$json = json_decode($result, true);
+
+		if ( $json['error'] == false ) {
+			$r->addPlayText('Current Position for Queue, ' . $_SESSION['qid'] . ' ,Having Name, ' .  $json['name'] . ', is ' . $json['position'] );
+			$r->addHangup();	// do something more or send hang up to kookoo
+		} 
+		else 
+		{
+			$r->addPlayText('Sorry, we could not find a queue with ID, ' . $_SESSION['qid'] . ' ,Please try again with correct ID' );
+			$_SESSION['next_goto']='Menu1';
+		}
 	}
 }
 else {
-
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "http://52.24.120.4:8000/api/queue/2");
-curl_setopt($ch, CURLOPT_HEADER, 0);
-$result = curl_exec($ch);
-curl_close($ch);
-		
-$json = json_decode($result, true);
-print_r($json);
-
-
 	//print you session param 'next_goto' and other details
-      $r->addPlayText('Sorry, session and events not maintained properly, Thank you for calling, have nice day');
-      $r->addHangup();	// do something more or to send hang up to kookoo	
+    $r->addPlayText('Sorry, session and events not maintained properly, Thank you for calling, have nice day');
+    $r->addHangup();	// do something more or to send hang up to kookoo	
 }
 
 
