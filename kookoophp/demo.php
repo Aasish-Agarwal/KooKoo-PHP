@@ -269,8 +269,8 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			$json = json_decode($result, true);
 			
 			$_SESSION['booking_result'] = $json;
-			$_SESSION['call_data'] = $data;
-			$_SESSION['call_header'] = $headr;
+			$_SESSION['call_data'] = implode("|",$data);
+			$_SESSION['call_header'] = implode("|",$headr);
 			$_SESSION['url'] = $url ;
 			
 			
