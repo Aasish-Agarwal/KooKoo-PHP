@@ -229,7 +229,10 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			# Log on to service
 			# Get the token
 			
-			$data = array('email' => $user, 'password' => true);
+			$_SESSION['email'] = $user;
+			$_SESSION['password'] = $pwd;
+			
+			$data = array('email' => $user, 'password' => $pwd);
 
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, $server . '/api/signin'  );
