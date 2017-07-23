@@ -2,6 +2,8 @@
 session_start();
 //start session, session will be maintained for entire call
 require_once("response.php");//response.php is the kookoo xml preparation class file
+require_once("ivruser.php");
+
 $r = new Response();
 
 $r->setFiller("yes");
@@ -183,7 +185,8 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		$_SESSION['qid'] = $_REQUEST['data'];
 
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, 'http://52.24.120.4:8000/api/queue/' . $_SESSION['qid'] );
+		# curl_setopt($ch, CURLOPT_URL, 'http://52.24.120.4:8000/api/queue/' . $_SESSION['qid'] );
+		curl_setopt($ch, CURLOPT_URL, $server . '/api/queue/' . $_SESSION['qid'] );
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$result = curl_exec($ch);
@@ -193,12 +196,83 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 
 		if ( $json['error'] == false ) {
 			$r->addPlayText('Current Position for Queue, ' . $_SESSION['qid'] . ' ,Having Name, ' .  $json['name'] . ', is ' . $json['position'], 4 );
-			$_SESSION['next_goto']='Menu1';
+
+			$collectInput = New CollectDtmf();
+			$collectInput->addPlayText('Press 1 to book an appointment',4);
+			$collectInput->setMaxDigits('1'); //max inputs to be allowed
+			$collectInput->setTimeOut('5000');  //maxtimeout if caller not give any inputs
+			$r->addCollectDtmf($collectInput);
+
+			$_SESSION['next_goto']='Menu2';
 		} 
 		else 
 		{
 			$r->addPlayText('Sorry, we could not find a queue with Number, ' . $_SESSION['qid'] . ' ,Please try again with correct Queue Number' );
 			$_SESSION['next_goto']='Menu1';
+		}
+	}
+}
+else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
+{
+	//input will come data param
+	//print parameter data value
+	 if($_REQUEST['data'] == ''){ //if value null, caller has not given any dtmf
+		//no input handled
+		 $r->addPlayText('You have not provided any choice. Call is being terminated. Thank you for contacting Easy Wait');
+		 $r->addHangup();	// do something more or to send hang up to kookoo	
+	}
+	else{
+		$userchoice = $_REQUEST['data'];
+
+		if ( $userchoice == 1 ) 
+		{
+			# Log on to service
+			# Get the token
+			
+			$data = array('email' => $user, 'password' => true);
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $server . '/api/signin'  );
+			curl_setopt($ch, CURLOPT_HEADER, 0);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_POST,true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+			$result = curl_exec($ch);
+			curl_close($ch);
+			$json = json_decode($result, true);
+			
+			$_SESSION['token'] = $json['token'];
+			
+			# Make appointment
+			# Announce user the position
+			
+			# $_SESSION['caller_number']		
+			$data = array('action' => 'book', 'reference' => 'IVR: ' .  $_SESSION['caller_number']);
+			$headr[] = 'Content-type: application/json';
+			$headr[] = 'Authorization: Bearer '. $_SESSION['token'];
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $server . '/api/queue/' .  $_SESSION['qid'] . '/appointment' );
+			curl_setopt($ch, CURLOPT_HEADER, 1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+			curl_setopt($ch, CURLOPT_POST,true);
+			curl_setopt($ch, CURLOPT_HTTPHEADER,$headr);
+			$result = curl_exec($ch);
+			curl_close($ch);
+			$json = json_decode($result, true);
+
+			$_SESSION['booked_position'] = $json['position'];
+			$r->addPlayText('You request has been accepted. Your appointment number is , ' . $json['position'], 4 );
+			$r->addPlayText('Thank You for contacting Easy Wait ');
+			$r->addHangup();	// do something more or to send hang up to kookoo	
+				
+		} 
+		else 
+		{
+			$r->addPlayText('Invalid choice. Call is being terminated. Thank you for contacting Easy Wait');
+			$r->addHangup();	// do something more or to send hang up to kookoo	
 		}
 	}
 }
