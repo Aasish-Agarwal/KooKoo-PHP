@@ -253,13 +253,15 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			# $_SESSION['caller_number']		
 			$data = array('action' => 'book', 'reference' => 'IVR: ' .  $_SESSION['caller_number']);
 			$data_string = json_encode($data);
-				   
-			$headr[] = 'Content-Length: ' . strlen($data_string);
+		
 			$headr[] = 'Content-type: application/json';
 			$headr[] = 'Authorization: Bearer '. $_SESSION['token'];
-
+			$headr[] = 'Content-Length: ' . strlen($data_string);
+	   
 			$url = $server . '/api/queue/' .  $_SESSION['qid'] . '/appointment';
+
 			$ch = curl_init();
+
 			curl_setopt($ch, CURLOPT_URL, $url );
 			curl_setopt($ch, CURLOPT_HEADER, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -268,10 +270,11 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			curl_setopt($ch, CURLOPT_HTTPHEADER,$headr);
 			$result = curl_exec($ch);
 			curl_close($ch);
+	   
 			$json = json_decode($result, true);
 			
-			$_SESSION['booking_result'] = $json;
-			$_SESSION['call_data'] = implode("|",$data);
+			$_SESSION['booking_result'] = implode("|",$json);
+			$_SESSION['call_data'] = $data_string;
 			$_SESSION['call_header'] = implode("|",$headr);
 			$_SESSION['url'] = $url ;
 			
