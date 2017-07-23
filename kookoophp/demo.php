@@ -252,11 +252,13 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			
 			# $_SESSION['caller_number']		
 			$data = array('action' => 'book', 'reference' => 'IVR: ' .  $_SESSION['caller_number']);
+			$headr[] = 'Content-length: 0';
 			$headr[] = 'Content-type: application/json';
 			$headr[] = 'Authorization: Bearer '. $_SESSION['token'];
 
+			$url = $server . '/api/queue/' .  $_SESSION['qid'] . '/appointment';
 			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, $server . '/api/queue/' .  $_SESSION['qid'] . '/appointment' );
+			curl_setopt($ch, CURLOPT_URL, $url );
 			curl_setopt($ch, CURLOPT_HEADER, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -265,7 +267,13 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			$result = curl_exec($ch);
 			curl_close($ch);
 			$json = json_decode($result, true);
-
+			
+			$_SESSION['booking_result'] = $json;
+			$_SESSION['call_data'] = $data;
+			$_SESSION['call_header'] = $headr;
+			$_SESSION['url'] = $url ;
+			
+			
 			$_SESSION['booked_position'] = $json['position'];
 			$r->addPlayText('You request has been accepted. Your appointment number is , ' . $json['position'], 4 );
 			$r->addPlayText('Thank You for contacting Easy Wait ');
