@@ -252,7 +252,9 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			
 			# $_SESSION['caller_number']		
 			$data = array('action' => 'book', 'reference' => 'IVR: ' .  $_SESSION['caller_number']);
-			$headr[] = 'Content-length: 0';
+			$data_string = json_encode($data);
+				   
+			$headr[] = 'Content-Length: ' . strlen($data_string);
 			$headr[] = 'Content-type: application/json';
 			$headr[] = 'Authorization: Bearer '. $_SESSION['token'];
 
@@ -261,7 +263,7 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			curl_setopt($ch, CURLOPT_URL, $url );
 			curl_setopt($ch, CURLOPT_HEADER, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
 			curl_setopt($ch, CURLOPT_POST,true);
 			curl_setopt($ch, CURLOPT_HTTPHEADER,$headr);
 			$result = curl_exec($ch);
@@ -273,12 +275,10 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 			$_SESSION['call_header'] = implode("|",$headr);
 			$_SESSION['url'] = $url ;
 			
-			
 			$_SESSION['booked_position'] = $json['position'];
 			$r->addPlayText('You request has been accepted. Your appointment number is , ' . $json['position'], 4 );
 			$r->addPlayText('Thank You for contacting Easy Wait ');
 			$r->addHangup();	// do something more or to send hang up to kookoo	
-				
 		} 
 		else 
 		{
