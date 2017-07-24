@@ -124,7 +124,31 @@ fwrite($fp,"----------- session params maintained -------------  \n");
      foreach ($_SESSION as $k => $v) {
 	 	fwrite($fp,"session params $k =  $v  \n");
 	}
- 
+
+if ( ! array_key_exists('token', $_SESSION)) {
+	# Log on to service
+	# Get the token
+
+	$_SESSION['email'] = $user;
+	$_SESSION['password'] = $pwd;
+
+	$data = array('email' => $user, 'password' => $pwd);
+
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $server . '/api/signin'  );
+	curl_setopt($ch, CURLOPT_HEADER, 0);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($ch, CURLOPT_POST,true);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+	$result = curl_exec($ch);
+	curl_close($ch);
+	$json = json_decode($result, true);
+
+	$_SESSION['token'] = $json['token'];
+}
+
+	
 /*First Time Recieving Call 
  * Here we will present the option to accept Queue Id
  * In Response we will fetch the queue status and play back  queue status
@@ -226,26 +250,6 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 
 		if ( $userchoice == 1 ) 
 		{
-			# Log on to service
-			# Get the token
-			
-			$_SESSION['email'] = $user;
-			$_SESSION['password'] = $pwd;
-			
-			$data = array('email' => $user, 'password' => $pwd);
-
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, $server . '/api/signin'  );
-			curl_setopt($ch, CURLOPT_HEADER, 0);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POST,true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-			$result = curl_exec($ch);
-			curl_close($ch);
-			$json = json_decode($result, true);
-			
-			$_SESSION['token'] = $json['token'];
 			
 			# Make appointment
 			# Announce user the position
