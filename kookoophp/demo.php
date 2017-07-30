@@ -3,6 +3,7 @@ session_start();
 //start session, session will be maintained for entire call
 require_once("response.php");//response.php is the kookoo xml preparation class file
 require_once("ivruser.php");
+require_once("easywaitroutines.php");
 
 $r = new Response();
 
@@ -126,26 +127,7 @@ fwrite($fp,"----------- session params maintained -------------  \n");
 	}
 
 if ( ! array_key_exists('token', $_SESSION)) {
-	# Log on to service
-	# Get the token
-
-	$_SESSION['email'] = $user;
-	$_SESSION['password'] = $pwd;
-
-	$data = array('email' => $user, 'password' => $pwd);
-
-	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, $server . '/api/signin'  );
-	curl_setopt($ch, CURLOPT_HEADER, 0);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_POST,true);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-	$result = curl_exec($ch);
-	curl_close($ch);
-	$json = json_decode($result, true);
-
-	$_SESSION['token'] = $json['token'];
+	$_SESSION['token'] = authenticateService($server , $user , $pwd);
 }
 
 	
@@ -209,25 +191,58 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 		$_SESSION['qid'] = $_REQUEST['data'];
 
 		$ch = curl_init();
-		# curl_setopt($ch, CURLOPT_URL, 'http://52.24.120.4:8000/api/queue/' . $_SESSION['qid'] );
 		curl_setopt($ch, CURLOPT_URL, $server . '/api/queue/' . $_SESSION['qid'] );
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$result = curl_exec($ch);
 		curl_close($ch);
-				
-		$json = json_decode($result, true);
+		$qstate_json = json_decode($result, true);
 
+		$reference = 'IVR: ' .  $_SESSION['caller_number'];
+		$booked_retrieved = getCurrentPositionIfAlreadyBooked ($server , $_SESSION['token'] , $_SESSION['qid'] , $reference);
+
+		$quid = $_SESSION['qid'];
+		$qname = $qstate_json['name'];
+		$current_position = $qstate_json['position'] ;
+		$accepting_appointments = $qstate_json['accepting_appointments'];
+		
+		
 		if ( $json['error'] == false ) {
-			$r->addPlayText('Current Position for Queue, ' . $_SESSION['qid'] . ' ,Having Name, ' .  $json['name'] . ', is ' . $json['position'], 4 );
+			$r->addPlayText("Current Position for Queue, $quid ,Having Name, $qname,  is, $current_position", 4 );
 
 			$collectInput = New CollectDtmf();
-			$collectInput->addPlayText('Press 1 to book an appointment',4);
-			$collectInput->setMaxDigits('1'); //max inputs to be allowed
-			$collectInput->setTimeOut('5000');  //maxtimeout if caller not give any inputs
-			$r->addCollectDtmf($collectInput);
-
-			$_SESSION['next_goto']='Menu2';
+			
+			if ( $booked_retrieved > 0 ) 
+			{
+				if ( $booked_retrieved <= $current_position ) {
+					$r->addPlayText("You are late, your position was $booked_retrieved", 4 );
+					
+					if ( $accepting_appointments > 0 ) {
+						$collectInput->addPlayText('Press 1 to book appointment again',4);
+						$collectInput->setMaxDigits('1'); //max inputs to be allowed
+						$collectInput->setTimeOut('5000');  //maxtimeout if caller not give any inputs
+						$r->addCollectDtmf($collectInput);
+						$_SESSION['next_goto']='Menu2';
+					} else {
+						$r->addHangup();	// do something more or to send hang up to kookoo	
+					}
+					
+				} else {
+					$r->addPlayText("You have an appointment at position, $booked_retrieved", 4 );
+					$r->addHangup();	// do something more or to send hang up to kookoo	
+				}
+				
+			} else {
+					if ( $accepting_appointments > 0 ) {
+						$collectInput->addPlayText('Press 1 to book an appointment',4);
+						$collectInput->setMaxDigits('1'); //max inputs to be allowed
+						$collectInput->setTimeOut('5000');  //maxtimeout if caller not give any inputs
+						$r->addCollectDtmf($collectInput);
+						$_SESSION['next_goto']='Menu2';
+				} else {
+					$r->addHangup();	// do something more or to send hang up to kookoo	
+				}
+			}
 		} 
 		else 
 		{
@@ -250,40 +265,10 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu2' )
 
 		if ( $userchoice == 1 ) 
 		{
+			$reference = 'IVR: ' .  $_SESSION['caller_number'];
+			$booked = makeAppointment($server , $_SESSION['token'] , $_SESSION['qid'] , $reference);
 			
-			# Make appointment
-			# Announce user the position
-			
-			# $_SESSION['caller_number']		
-			$data = array('action' => 'book', 'reference' => 'IVR: ' .  $_SESSION['caller_number']);
-			$data_string = json_encode($data);
-		
-			$headr[] = 'Content-type: application/json';
-			$headr[] = 'Authorization: Bearer '. $_SESSION['token'];
-			$headr[] = 'Content-Length: ' . strlen($data_string);
-	   
-			$url = $server . '/api/queue/' .  $_SESSION['qid'] . '/appointment';
-
-			$ch = curl_init();
-
-			curl_setopt($ch, CURLOPT_URL, $url );
-			curl_setopt($ch, CURLOPT_HEADER, 0);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-			curl_setopt($ch, CURLOPT_POST,true);
-			curl_setopt($ch, CURLOPT_HTTPHEADER,$headr);
-			$result = curl_exec($ch);
-			curl_close($ch);
-	   
-			$json = json_decode($result, true);
-			
-			$_SESSION['booking_result'] = implode("|",$json);
-			$_SESSION['call_data'] = $data_string;
-			$_SESSION['call_header'] = implode("|",$headr);
-			$_SESSION['url'] = $url ;
-			
-			$_SESSION['booked_position'] = $json['position'];
-			$r->addPlayText('You request has been accepted. Your appointment number is , ' . $json['position'], 4 );
+			$r->addPlayText('You request has been accepted. Your appointment number is , ' . $booked, 4 );
 			$r->addPlayText('Thank You for contacting Easy Wait ');
 			$r->addHangup();	// do something more or to send hang up to kookoo	
 		} 
