@@ -215,7 +215,8 @@ else if($_REQUEST['event'] == 'GotDTMF' && $_SESSION['next_goto'] == 'Menu1_Chec
 			if ( $booked_retrieved > 0 ) 
 			{
 				if ( $booked_retrieved <= $current_position ) {
-					$r->addPlayText("You are late, your position was $booked_retrieved", 4 );
+					$r->addPlayText("You had an appointment at position $booked_retrieved" );
+					$r->addPlayText("You have missed it now " );
 					
 					if ( $accepting_appointments > 0 ) {
 						$collectInput->addPlayText('Press 1 to book appointment again',4);
